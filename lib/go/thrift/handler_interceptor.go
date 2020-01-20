@@ -5,10 +5,10 @@ import (
 )
 
 type HandlerFunc func(ctx context.Context, arg interface{}) (result interface{}, err error)
-type HandlerInterceptor func(ctx context.Context, arg interface{}, handlerFunc HandlerFunc) (result interface{}, err error)
+type HandlerInterceptor func(ctx context.Context, methodName string, arg interface{}, handlerFunc HandlerFunc) (result interface{}, err error)
 
 func NullInterceptor() HandlerInterceptor {
-	return func(ctx context.Context, arg interface{}, handlerFunc HandlerFunc) (result interface{}, err error) {
+	return func(ctx context.Context, methodName string, arg interface{}, handlerFunc HandlerFunc) (result interface{}, err error) {
 		return handlerFunc(ctx, arg)
 	}
 }
@@ -21,9 +21,9 @@ func ChainedHandlerInterceptor(interceptors ...HandlerInterceptor) HandlerInterc
 	}
 
 	chainer := func(currentInterceptor HandlerInterceptor, nextInterceptor HandlerInterceptor) HandlerInterceptor {
-		return func(ctx context.Context, arg interface{}, handlerFunc HandlerFunc) (result interface{}, err error) {
-			return currentInterceptor(ctx, arg, func(ctx context.Context, arg interface{}) (result interface{}, err error) {
-				return nextInterceptor(ctx, arg, handlerFunc)
+		return func(ctx context.Context, methodName string, arg interface{}, handlerFunc HandlerFunc) (result interface{}, err error) {
+			return currentInterceptor(ctx, methodName, arg, func(ctx context.Context, arg interface{}) (result interface{}, err error) {
+				return nextInterceptor(ctx, methodName, arg, handlerFunc)
 			})
 		}
 	}

@@ -20,7 +20,7 @@ type ProcessorOptions struct {
 	Interceptor HandlerInterceptor
 }
 
-var DefaultProcessorOptions = &ProcessorOptions{
+var DefaultProcessorOptions = ProcessorOptions {
 	Interceptor: NullInterceptor(),
 }
 

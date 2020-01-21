@@ -2649,10 +2649,10 @@ void t_go_generator::generate_service_server(t_service* tservice) {
         << "Processor{handler:handler, processorMap:make(map[string]thrift.TProcessorFunction)}"
         << endl;
 
-    f_types_ << indent() << "processorOptions := thrift.DefaultProcessorOptions" << endl;
-    f_types_ << indent() << "for _, opt := range opts {" << endl;
-    f_types_ << indent() << "opt.Apply(&processorOptions)" << endl;
-    f_types_ << indent() << "}" << endl;
+    f_types_ << indent() << "  processorOptions := thrift.DefaultProcessorOptions" << endl;
+    f_types_ << indent() << "  for _, opt := range opts {" << endl;
+    f_types_ << indent() << "    opt.Apply(&processorOptions)" << endl;
+    f_types_ << indent() << "  }" << endl;
 
     for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
       string escapedFuncName(escape_string((*f_iter)->get_name()));
@@ -2834,7 +2834,7 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
     }
 
     if (!tfunction->is_oneway()) {
-        f_types_ << "  x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "
+        f_types_ << indent() << "  x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "
                     "\"Internal error processing " << escape_string(tfunction->get_name())
                  << ": \" + err2.Error())" << endl;
         f_types_ << indent() << "  oprot.WriteMessageBegin(\"" << escape_string(tfunction->get_name())
@@ -2850,7 +2850,9 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
         f_types_ << indent() << "}" << endl;
     }
 
-    f_types_ << indent() << "}"; // closes err2 != nil
+    indent_down();
+
+    f_types_ << indent() << "  }"; // closes err2 != nil
 
     if (!tfunction->is_oneway()) {
         if (!tfunction->get_returntype()->is_void()) {

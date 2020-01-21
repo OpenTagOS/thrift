@@ -2864,10 +2864,10 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
             }
             f_types_ << "retval" << endl;
             f_types_ << "  }" << endl;
+            indent_down();
         } else {
             f_types_ << endl;
         }
-        indent_down();
         f_types_ << indent() << "if err2 = oprot.WriteMessageBegin(\""
                  << escape_string(tfunction->get_name()) << "\", thrift.REPLY, seqId); err2 != nil {"
                  << endl;

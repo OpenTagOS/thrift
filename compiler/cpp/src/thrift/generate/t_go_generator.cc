@@ -2662,7 +2662,7 @@ void t_go_generator::generate_service_server(t_service* tservice) {
     }
 
     string x(tmp("x"));
-    f_types_ << indent() << "return " << self << endl;
+    f_types_ << indent() << "  return " << self << endl;
     f_types_ << indent() << "}" << endl << endl;
     f_types_ << indent() << "func (p *" << serviceName
                << "Processor) Process(ctx context.Context, iprot, oprot thrift.TProtocol) (success bool, err "
@@ -2821,7 +2821,7 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
     t_struct* exceptions = tfunction->get_xceptions();
     const vector<t_field*>& x_fields = exceptions->get_members();
     if (!x_fields.empty()) {
-        f_types_ << "switch v := err2.(type) {" << endl;
+        f_types_ << indent() << "switch v := err2.(type) {" << endl;
 
         vector<t_field*>::const_iterator xf_iter;
 
@@ -2852,7 +2852,7 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
 
     indent_down();
 
-    f_types_ << indent() << "  }"; // closes err2 != nil
+    f_types_ << indent() << "}"; // closes err2 != nil
 
     if (!tfunction->is_oneway()) {
         if (!tfunction->get_returntype()->is_void()) {
@@ -2863,7 +2863,7 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
                 f_types_ << "&";
             }
             f_types_ << "retval" << endl;
-            f_types_ << "}" << endl;
+            f_types_ << "  }" << endl;
         } else {
             f_types_ << endl;
         }

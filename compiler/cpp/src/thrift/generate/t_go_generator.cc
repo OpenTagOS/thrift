@@ -1439,7 +1439,7 @@ void t_go_generator::generate_go_struct_definition(ostream& out,
       out << indent() << "  if !p.IsSet" << publicized_name << "() {" << endl;
       out << indent() << "    return " << def_var_name << endl;
       out << indent() << "  }" << endl;
-      out << indent() << "return " << maybepointer << "p." << publicized_name << endl;
+      out << indent() << "  return " << maybepointer << "p." << publicized_name << endl;
       out << indent() << "}" << endl;
     } else {
       out << endl;

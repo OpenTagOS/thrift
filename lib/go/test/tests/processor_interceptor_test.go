@@ -24,7 +24,7 @@ func NewResultInterceptor() thrift.HandlerInterceptor {
 type DummyHandler struct {
 }
 
-func (h *DummyHandler) DummyRequest(arg1 string) (string, error) {
+func (h *DummyHandler) DummyRequest(ctx context.Context, arg1 string) (string, error) {
 	return expectedHandlerResult, nil
 }
 

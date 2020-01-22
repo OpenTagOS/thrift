@@ -49,7 +49,7 @@ func TestProcessorInterceptor(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer transport.Close()
-	protocol := protocolFactory.GetProtocol(thrift.NewTBinaryProtocolTransport(transport))
+	protocol := protocolFactory.GetProtocol(transport)
 
 	client := processorinterceptortest.NewProcessorInterceptorClient(thrift.NewTStandardClient(protocol, protocol))
 

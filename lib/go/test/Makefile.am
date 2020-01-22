@@ -95,8 +95,8 @@ check: gopath
 				ignoreinitialismstest \
 				unionbinarytest \
 				conflictnamespacetestsuperthing \
-				conflict/context/conflict_service-remote \
-				processorinterceptortest
+				processorinterceptortest \
+				conflict/context/conflict_service-remote
 	GOPATH=`pwd`/gopath $(GO) test thrift tests dontexportrwtest
 
 clean-local:

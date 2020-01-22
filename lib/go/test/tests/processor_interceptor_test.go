@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"log"
 	"processorinterceptortest"
 	"testing"
 	"thrift"
@@ -29,6 +30,8 @@ func (h *DummyHandler) DummyRequest(arg1 string) (string, error) {
 }
 
 func TestProcessorInterceptor(t *testing.T) {
+	log.Println("TEST STARTED")
+
 	processor := processorinterceptortest.NewProcessorInterceptor(new(DummyHandler), thrift.NewHandlerInterceptorOption(NewResultInterceptor()))
 	protocolFactory := thrift.NewTBinaryProtocolFactoryDefault()
 	transportFactory := thrift.NewTTransportFactory()
@@ -60,4 +63,6 @@ func TestProcessorInterceptor(t *testing.T) {
 	} else if ret != expectedInterceptedHandlerResult {
 		t.Fatal("Unexpected result from server: ", ret)
 	}
+
+	log.Println("TEST FINISHED")
 }

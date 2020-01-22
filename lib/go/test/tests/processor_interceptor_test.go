@@ -16,6 +16,7 @@ const expectedInterceptedHandlerResult = expectedHandlerResult + " was intercept
 
 func NewResultInterceptor() thrift.HandlerInterceptor {
 	return func(ctx context.Context, methodName string, arg interface{}, handlerFunc thrift.HandlerFunc) (result interface{}, err error) {
+		return nil, true
 		handlerResult, handlerError := handlerFunc(ctx, arg)
 
 		return handlerResult.(string) + " was intercepted", handlerError

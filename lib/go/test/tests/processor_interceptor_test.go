@@ -53,7 +53,7 @@ func TestProcessorInterceptor(t *testing.T) {
 
 	client := processorinterceptortest.NewProcessorInterceptorClient(thrift.NewTStandardClient(protocol, protocol))
 
-	ret, err := client.DummyRequest(requestArgument)
+	ret, err := client.DummyRequest(context.Background(), requestArgument)
 
 	if err != nil {
 		t.Fatal("Unable to call server:", err)

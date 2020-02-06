@@ -18,6 +18,7 @@
  */
 package org.apache.thrift;
 
+import org.apache.thrift.interceptor.TInterceptor;
 import org.apache.thrift.protocol.*;
 import org.apache.thrift.async.AsyncMethodCallback;
 
@@ -110,5 +111,9 @@ public class TBaseAsyncProcessor<I> implements TAsyncProcessor, TProcessor {
 
     @Override
     public void process(TProtocol in, TProtocol out) throws TException {
+    }
+
+    @Override
+    public void registerInterceptor(TInterceptor interceptor) {
     }
 }

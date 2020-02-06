@@ -19,10 +19,12 @@
 
 package org.apache.thrift;
 
+import org.apache.thrift.interceptor.TInterceptor;
 import org.apache.thrift.protocol.*;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Objects;
 
 /**
  * <code>TMultiplexedProcessor</code> is a <code>TProcessor</code> allowing
@@ -53,6 +55,7 @@ public class TMultiplexedProcessor implements TProcessor {
     private final Map<String,TProcessor> SERVICE_PROCESSOR_MAP
             = new HashMap<String,TProcessor>();
     private TProcessor defaultProcessor;
+    private TInterceptor interceptor;
 
     /**
      * 'Register' a service with this <code>TMultiplexedProcessor</code>.  This
@@ -66,6 +69,7 @@ public class TMultiplexedProcessor implements TProcessor {
      */
     public void registerProcessor(String serviceName, TProcessor processor) {
         SERVICE_PROCESSOR_MAP.put(serviceName, processor);
+        applyInterceptor();
     }
 
     /**
@@ -74,6 +78,7 @@ public class TMultiplexedProcessor implements TProcessor {
      */
     public void registerDefault(TProcessor processor) {
         defaultProcessor = processor;
+        applyInterceptor();
     }
 
     /**
@@ -138,6 +143,12 @@ public class TMultiplexedProcessor implements TProcessor {
         actualProcessor.process(new StoredMessageProtocol(iprot, standardMessage), oprot);
     }
 
+    @Override
+    public void registerInterceptor(TInterceptor interceptor) {
+        this.interceptor = interceptor;
+        applyInterceptor();
+    }
+
     /**
      *  Our goal was to work with any protocol.  In order to do that, we needed
      *  to allow them to call readMessageBegin() and get a TMessage in exactly
@@ -155,4 +166,19 @@ public class TMultiplexedProcessor implements TProcessor {
         }
     }
 
+    private void applyInterceptor(){
+        if (Objects.isNull(interceptor)){
+            return;
+        }
+
+        for (Map.Entry<String, TProcessor> entry : SERVICE_PROCESSOR_MAP.entrySet()){
+            TProcessor processor = entry.getValue();
+            processor.registerInterceptor(interceptor);
+            entry.setValue(processor);
+        }
+
+        if (Objects.nonNull(defaultProcessor)){
+            defaultProcessor.registerInterceptor(interceptor);
+        }
+    }
 }

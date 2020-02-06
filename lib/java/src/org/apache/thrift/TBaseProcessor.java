@@ -2,7 +2,10 @@ package org.apache.thrift;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
+import org.apache.thrift.interceptor.TInterceptor;
+import org.apache.thrift.interceptor.TInterceptionData;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
@@ -10,32 +13,65 @@ import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
 
 public abstract class TBaseProcessor<I> implements TProcessor {
-  private final I iface;
-  private final Map<String,ProcessFunction<I, ? extends TBase>> processMap;
+    private final I iface;
+    private final Map<String, ProcessFunction<I, ? extends TBase>> processMap;
 
-  protected TBaseProcessor(I iface, Map<String, ProcessFunction<I, ? extends TBase>> processFunctionMap) {
-    this.iface = iface;
-    this.processMap = processFunctionMap;
-  }
+    private TInterceptor interceptor;
 
-  public Map<String,ProcessFunction<I, ? extends TBase>> getProcessMapView() {
-    return Collections.unmodifiableMap(processMap);
-  }
-
-  @Override
-  public void process(TProtocol in, TProtocol out) throws TException {
-    TMessage msg = in.readMessageBegin();
-    ProcessFunction fn = processMap.get(msg.name);
-    if (fn == null) {
-      TProtocolUtil.skip(in, TType.STRUCT);
-      in.readMessageEnd();
-      TApplicationException x = new TApplicationException(TApplicationException.UNKNOWN_METHOD, "Invalid method name: '"+msg.name+"'");
-      out.writeMessageBegin(new TMessage(msg.name, TMessageType.EXCEPTION, msg.seqid));
-      x.write(out);
-      out.writeMessageEnd();
-      out.getTransport().flush();
-    } else {
-      fn.process(msg.seqid, in, out, iface);
+    protected TBaseProcessor(I iface, Map<String, ProcessFunction<I, ? extends TBase>> processFunctionMap) {
+        this.iface = iface;
+        this.processMap = processFunctionMap;
     }
-  }
+
+    public Map<String, ProcessFunction<I, ? extends TBase>> getProcessMapView() {
+        return Collections.unmodifiableMap(processMap);
+    }
+
+    @Override
+    public void process(TProtocol in, TProtocol out) throws TException {
+        TInterceptionData.Builder processDataBuilder = TInterceptionData.newBuilder().iface(iface);
+
+        try {
+            TMessage msg = in.readMessageBegin();
+            ProcessFunction fn = processMap.get(msg.name);
+
+            if (fn == null) {
+                TProtocolUtil.skip(in, TType.STRUCT);
+                in.readMessageEnd();
+                TApplicationException ex = new TApplicationException(TApplicationException.UNKNOWN_METHOD, "Invalid method name: '" + msg.name + "'");
+                processDataBuilder.exception(ex);
+                out.writeMessageBegin(new TMessage(msg.name, TMessageType.EXCEPTION, msg.seqid));
+                ex.write(out);
+                out.writeMessageEnd();
+                out.getTransport().flush();
+            } else {
+                fn.process(msg.seqid, in, out, iface);
+
+                processDataBuilder.processFunction(fn);
+                this.processInterceptors(processDataBuilder.build());
+            }
+        } catch (TException e) {
+            processDataBuilder.exception(e);
+            this.processInterceptors(processDataBuilder.build());
+
+            throw e;
+        }
+    }
+
+    @Override
+    public void registerInterceptor(TInterceptor interceptor) {
+        if (Objects.nonNull(this.interceptor)){
+            return;
+        }
+
+        this.interceptor = interceptor;
+    }
+
+    private void processInterceptors(TInterceptionData processData) {
+        if (Objects.isNull(interceptor)) {
+            return;
+        }
+
+        interceptor.call(processData);
+    }
 }

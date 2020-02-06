@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.apache.thrift.interceptor.TInterceptor;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TMessageType;
 import org.apache.thrift.protocol.TProtocol;
@@ -56,6 +57,7 @@ public class TestMultiplexedProcessor {
   }
 
   static class StubProcessor implements TProcessor {
+
     @Override
     public void process(TProtocol in, TProtocol out) throws TException {
       TMessage msg = in.readMessageBegin();
@@ -63,6 +65,10 @@ public class TestMultiplexedProcessor {
         throw new TException("incorrect parameters");
       }
       out.writeMessageBegin(new TMessage("func", TMessageType.REPLY, 42));
+    }
+
+    @Override
+    public void registerInterceptor(TInterceptor interceptor) {
     }
   }
 
@@ -81,5 +87,4 @@ public class TestMultiplexedProcessor {
     mp.process(iprot, oprot);
     verify(oprot).writeMessageBegin(any(TMessage.class));
   }
-
 }

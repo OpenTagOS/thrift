@@ -17,16 +17,10 @@
  * under the License.
  */
 
-package org.apache.thrift;
+package org.apache.thrift.interceptor;
 
-import org.apache.thrift.interceptor.TInterceptor;
-import org.apache.thrift.protocol.TProtocol;
-
-/**
- * A processor is a generic object which operates upon an input stream and
- * writes to some output stream.
- */
-public interface TProcessor {
-  public void process(TProtocol in, TProtocol out) throws TException;
-  void registerInterceptor(TInterceptor interceptor);
+public class TInterceptionException extends Exception {
+    public TInterceptionException(String message) {
+        super(message);
+    }
 }

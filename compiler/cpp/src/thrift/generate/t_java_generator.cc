@@ -1937,7 +1937,6 @@ void t_java_generator::generate_java_struct_equality(ostream& out, t_struct* tst
       << indent() << "return false;" << endl;
   scope_down(out);
   out << endl;
-
   out << indent() << "public boolean equals(" << tstruct->get_name() << " that) {" << endl;
   indent_up();
   out << indent() << "if (that == null)" << endl

@@ -3365,13 +3365,6 @@ void t_java_generator::generate_service_server(t_service* tservice) {
   indent(f_service_) << "  super(iface, getProcessMap(processMap));" << endl;
   indent(f_service_) << "}" << endl << endl;
 
-  indent(f_service_) << "protected Processor(I iface, org.apache.thrift.interceptor.TInterceptor interceptor, "
-                        "java.util.Map<java.lang.String, "
-                        "org.apache.thrift.ProcessFunction<I, ? extends org.apache.thrift.TBase>> "
-                        "processMap) {" << endl;
-  indent(f_service_) << "  super(iface, getProcessMap(processMap));" << endl;
-  indent(f_service_) << "}" << endl << endl;
-
   indent(f_service_) << "private static <I extends Iface> java.util.Map<java.lang.String,  "
                         "org.apache.thrift.ProcessFunction<I, ? extends org.apache.thrift.TBase>> "
                         "getProcessMap(java.util.Map<java.lang.String, "

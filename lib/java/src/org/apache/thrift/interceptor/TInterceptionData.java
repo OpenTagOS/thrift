@@ -65,7 +65,7 @@ public class TInterceptionData<I> {
             throw new TInterceptionException("ProcessFunction is empty");
         }
 
-        return fn.getEmptyArgsInstance();
+        return fn.getArgsInstance();
     }
 
     /**

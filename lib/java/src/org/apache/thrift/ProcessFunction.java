@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class ProcessFunction<I, T extends TBase> {
   private final String methodName;
+  private TBase args;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessFunction.class.getName());
 
@@ -21,6 +22,7 @@ public abstract class ProcessFunction<I, T extends TBase> {
     T args = getEmptyArgsInstance();
     try {
       args.read(iprot);
+      this.args = args.deepCopy();
     } catch (TProtocolException e) {
       iprot.readMessageEnd();
       TApplicationException x = new TApplicationException(TApplicationException.PROTOCOL_ERROR, e.getMessage());
@@ -81,6 +83,10 @@ public abstract class ProcessFunction<I, T extends TBase> {
   public abstract TBase getResult(I iface, T args) throws TException;
 
   public abstract T getEmptyArgsInstance();
+
+  public TBase getArgsInstance(){
+    return args;
+  }
 
   public String getMethodName() {
     return methodName;

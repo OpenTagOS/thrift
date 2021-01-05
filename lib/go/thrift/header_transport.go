@@ -75,6 +75,15 @@ const (
 	THeaderProtocolDefault                   = THeaderProtocolBinary
 )
 
+// Declared globally to avoid repetitive allocations, not really used.
+var globalMemoryBuffer = NewTMemoryBuffer()
+
+// Validate checks whether the THeaderProtocolID is a valid/supported one.
+func (id THeaderProtocolID) Validate() error {
+	_, err := id.GetProtocol(globalMemoryBuffer)
+	return err
+}
+
 // GetProtocol gets the corresponding TProtocol from the wrapped protocol id.
 func (id THeaderProtocolID) GetProtocol(trans TTransport) (TProtocol, error) {
 	switch id {
@@ -84,7 +93,7 @@ func (id THeaderProtocolID) GetProtocol(trans TTransport) (TProtocol, error) {
 			fmt.Sprintf("THeader protocol id %d not supported", id),
 		)
 	case THeaderProtocolBinary:
-		return NewTBinaryProtocolFactoryDefault().GetProtocol(trans), nil
+		return NewTBinaryProtocolTransport(trans), nil
 	case THeaderProtocolCompact:
 		return NewTCompactProtocol(trans), nil
 	}
@@ -93,11 +102,12 @@ func (id THeaderProtocolID) GetProtocol(trans TTransport) (TProtocol, error) {
 // THeaderTransformID defines the numeric id of the transform used.
 type THeaderTransformID int32
 
-// THeaderTransformID values
+// THeaderTransformID values.
+//
+// Values not defined here are not currently supported, namely HMAC and Snappy.
 const (
 	TransformNone THeaderTransformID = iota // 0, no special handling
 	TransformZlib                           // 1, zlib
-	// Rest of the values are not currently supported, namely HMAC and Snappy.
 )
 
 var supportedTransformIDs = map[THeaderTransformID]bool{
@@ -285,6 +295,34 @@ func NewTHeaderTransport(trans TTransport) *THeaderTransport {
 	}
 }
 
+// NewTHeaderTransportWithProtocolID creates THeaderTransport from the
+// underlying transport, with given protocol ID set.
+//
+// If trans is already a *THeaderTransport, it will be returned as is,
+// but with protocol ID overridden by the value passed in.
+//
+// If the passed in protocol ID is an invalid/unsupported one,
+// this function returns error.
+//
+// The protocol ID overridden is only useful for client transports.
+// For servers,
+// the protocol ID will be overridden again to the one set by the client,
+// to ensure that servers always speak the same dialect as the client.
+func NewTHeaderTransportWithProtocolID(trans TTransport, protoID THeaderProtocolID) (*THeaderTransport, error) {
+	if err := protoID.Validate(); err != nil {
+		return nil, err
+	}
+	if ht, ok := trans.(*THeaderTransport); ok {
+		return ht, nil
+	}
+	return &THeaderTransport{
+		transport:    trans,
+		reader:       bufio.NewReader(trans),
+		writeHeaders: make(THeaderMap),
+		protocolID:   protoID,
+	}, nil
+}
+
 // Open calls the underlying transport's Open function.
 func (t *THeaderTransport) Open() error {
 	return t.transport.Open()
@@ -297,18 +335,34 @@ func (t *THeaderTransport) IsOpen() bool {
 
 // ReadFrame tries to read the frame header, guess the client type, and handle
 // unframed clients.
-func (t *THeaderTransport) ReadFrame() error {
+func (t *THeaderTransport) ReadFrame(ctx context.Context) error {
 	if !t.needReadFrame() {
 		// No need to read frame, skipping.
 		return nil
 	}
+
 	// Peek and handle the first 32 bits.
 	// They could either be the length field of a framed message,
 	// or the first bytes of an unframed message.
-	buf, err := t.reader.Peek(size32)
+	var buf []byte
+	var err error
+	// This is also usually the first read from a connection,
+	// so handle retries around socket timeouts.
+	_, deadlineSet := ctx.Deadline()
+	for {
+		buf, err = t.reader.Peek(size32)
+		if deadlineSet && isTimeoutError(err) && ctx.Err() == nil {
+			// This is I/O timeout and we still have time,
+			// continue trying
+			continue
+		}
+		// For anything else, do not retry
+		break
+	}
 	if err != nil {
 		return err
 	}
+
 	frameSize := binary.BigEndian.Uint32(buf)
 	if frameSize&VERSION_MASK == VERSION_1 {
 		t.clientType = clientUnframedBinary
@@ -330,10 +384,7 @@ func (t *THeaderTransport) ReadFrame() error {
 	t.reader.Discard(size32)
 
 	// Read the frame fully into frameBuffer.
-	_, err = io.Copy(
-		&t.frameBuffer,
-		io.LimitReader(t.reader, int64(frameSize)),
-	)
+	_, err = io.CopyN(&t.frameBuffer, t.reader, int64(frameSize))
 	if err != nil {
 		return err
 	}
@@ -344,7 +395,7 @@ func (t *THeaderTransport) ReadFrame() error {
 	version := binary.BigEndian.Uint32(buf)
 	if version&THeaderHeaderMask == THeaderHeaderMagic {
 		t.clientType = clientHeaders
-		return t.parseHeaders(frameSize)
+		return t.parseHeaders(ctx, frameSize)
 	}
 	if version&VERSION_MASK == VERSION_1 {
 		t.clientType = clientFramedBinary
@@ -374,7 +425,7 @@ func (t *THeaderTransport) endOfFrame() error {
 	return t.frameReader.Close()
 }
 
-func (t *THeaderTransport) parseHeaders(frameSize uint32) error {
+func (t *THeaderTransport) parseHeaders(ctx context.Context, frameSize uint32) error {
 	if t.clientType != clientHeaders {
 		return nil
 	}
@@ -395,7 +446,7 @@ func (t *THeaderTransport) parseHeaders(frameSize uint32) error {
 		)
 	}
 	headerBuf := NewTMemoryBuffer()
-	_, err = io.Copy(headerBuf, io.LimitReader(&t.frameBuffer, headerLength))
+	_, err = io.CopyN(headerBuf, &t.frameBuffer, headerLength)
 	if err != nil {
 		return err
 	}
@@ -454,11 +505,11 @@ func (t *THeaderTransport) parseHeaders(frameSize uint32) error {
 				return err
 			}
 			for i := 0; i < int(count); i++ {
-				key, err := hp.ReadString()
+				key, err := hp.ReadString(ctx)
 				if err != nil {
 					return err
 				}
-				value, err := hp.ReadString()
+				value, err := hp.ReadString(ctx)
 				if err != nil {
 					return err
 				}
@@ -488,21 +539,37 @@ func (t *THeaderTransport) needReadFrame() bool {
 }
 
 func (t *THeaderTransport) Read(p []byte) (read int, err error) {
-	err = t.ReadFrame()
+	// Here using context.Background instead of a context passed in is safe.
+	// First is that there's no way to pass context into this function.
+	// Then, 99% of the case when calling this Read frame is already read
+	// into frameReader. ReadFrame here is more of preventing bugs that
+	// didn't call ReadFrame before calling Read.
+	err = t.ReadFrame(context.Background())
 	if err != nil {
 		return
 	}
 	if t.frameReader != nil {
 		read, err = t.frameReader.Read(p)
-		if err == io.EOF {
+		if err == nil && t.frameBuffer.Len() <= 0 {
+			// the last Read finished the frame, do endOfFrame
+			// handling here.
+			err = t.endOfFrame()
+		} else if err == io.EOF {
 			err = t.endOfFrame()
 			if err != nil {
 				return
 			}
-			if read < len(p) {
-				var nextRead int
-				nextRead, err = t.Read(p[read:])
-				read += nextRead
+			if read == 0 {
+				// Try to read the next frame when we hit EOF
+				// (end of frame) immediately.
+				// When we got here, it means the last read
+				// finished the previous frame, but didn't
+				// do endOfFrame handling yet.
+				// We have to read the next frame here,
+				// as otherwise we would return 0 and nil,
+				// which is a case not handled well by most
+				// protocol implementations.
+				return t.Read(p)
 			}
 		}
 		return
@@ -553,10 +620,10 @@ func (t *THeaderTransport) Flush(ctx context.Context) error {
 				return NewTTransportExceptionFromError(err)
 			}
 			for key, value := range t.writeHeaders {
-				if err := hp.WriteString(key); err != nil {
+				if err := hp.WriteString(ctx, key); err != nil {
 					return NewTTransportExceptionFromError(err)
 				}
-				if err := hp.WriteString(value); err != nil {
+				if err := hp.WriteString(ctx, value); err != nil {
 					return NewTTransportExceptionFromError(err)
 				}
 			}

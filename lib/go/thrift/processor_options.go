@@ -1,3 +1,5 @@
+// +build windows
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -19,32 +21,14 @@
 
 package thrift
 
-type ProcessorOption interface {
-	Apply(processorOptions *ProcessorOptions)
+func (sc *socketConn) read0() error {
+	// On windows, we fallback to the default behavior of reading 0 bytes.
+	var p []byte
+	_, err := sc.Conn.Read(p)
+	return err
 }
 
-type funcProcessorOption struct {
-	f func(*ProcessorOptions)
-}
-
-func (f *funcProcessorOption) Apply(processorOptions *ProcessorOptions) {
-	f.f(processorOptions)
-}
-
-func newFuncProcessOption(f func(*ProcessorOptions)) *funcProcessorOption {
-	return &funcProcessorOption{f: f}
-}
-
-type ProcessorOptions struct {
-	Interceptor HandlerInterceptor
-}
-
-var DefaultProcessorOptions = ProcessorOptions{
-	Interceptor: NullInterceptor(),
-}
-
-func NewHandlerInterceptorOption(interceptor HandlerInterceptor) ProcessorOption {
-	return newFuncProcessOption(func(options *ProcessorOptions) {
-		options.Interceptor = interceptor
-	})
+func (sc *socketConn) checkConn() error {
+	// On windows, we always return nil for this check.
+	return nil
 }

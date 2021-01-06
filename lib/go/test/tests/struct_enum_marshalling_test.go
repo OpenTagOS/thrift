@@ -2,8 +2,8 @@ package tests
 
 import (
 	"encoding/json"
-	"testing"
 	"structenummarshallingtest"
+	"testing"
 )
 
 func TestUnmarshaling(t *testing.T) {
@@ -33,7 +33,7 @@ func TestMarshaling(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectedJson := `{"dummyEnum": "FIRST"}`
+	expectedJson := `{"dummyEnum":"FIRST"}`
 	actualJson := string(jsonBytes)
 
 	if actualJson != expectedJson {

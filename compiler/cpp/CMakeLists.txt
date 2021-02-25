@@ -72,11 +72,9 @@ macro(THRIFT_ADD_COMPILER name description initial)
 endmacro()
 
 # The following compiler can be enabled or disabled
-THRIFT_ADD_COMPILER(as3     "Enable compiler for ActionScript 3" ON)
 THRIFT_ADD_COMPILER(c_glib  "Enable compiler for C with Glib" ON)
 THRIFT_ADD_COMPILER(cl      "Enable compiler for Common LISP" ON)
 THRIFT_ADD_COMPILER(cpp     "Enable compiler for C++" ON)
-THRIFT_ADD_COMPILER(csharp  "Enable compiler for C#" ON)
 THRIFT_ADD_COMPILER(d       "Enable compiler for D" ON)
 THRIFT_ADD_COMPILER(dart    "Enable compiler for Dart" ON)
 THRIFT_ADD_COMPILER(delphi  "Enable compiler for Delphi" ON)
@@ -86,6 +84,7 @@ THRIFT_ADD_COMPILER(gv      "Enable compiler for GraphViz" ON)
 THRIFT_ADD_COMPILER(haxe    "Enable compiler for Haxe" ON)
 THRIFT_ADD_COMPILER(hs      "Enable compiler for Haskell" ON)
 THRIFT_ADD_COMPILER(html    "Enable compiler for HTML Documentation" ON)
+THRIFT_ADD_COMPILER(markdown "Enable compiler for Markdown Documentation" ON)
 THRIFT_ADD_COMPILER(java    "Enable compiler for Java"   ON)
 THRIFT_ADD_COMPILER(javame  "Enable compiler for Java ME" ON)
 THRIFT_ADD_COMPILER(js      "Enable compiler for JavaScript" ON)
@@ -115,6 +114,13 @@ set_target_properties(thrift-compiler PROPERTIES RUNTIME_OUTPUT_DIRECTORY bin/)
 set_target_properties(thrift-compiler PROPERTIES OUTPUT_NAME thrift)
 
 target_link_libraries(thrift-compiler parse)
+
+add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/thrift${CMAKE_EXECUTABLE_SUFFIX}"
+    DEPENDS thrift-compiler
+    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:thrift-compiler>" "${CMAKE_CURRENT_SOURCE_DIR}/"
+    COMMENT "Copying the thrift compiler to the source tree for use by downstream targets")
+add_custom_target(copy-thrift-compiler
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/thrift${CMAKE_EXECUTABLE_SUFFIX}")
 
 install(TARGETS thrift-compiler DESTINATION bin)
 

@@ -84,6 +84,16 @@ namespace Thrift.Protocol
         }
 
         /// <summary>
+        ///    Resets the context stack to pristine state. Allows for reusal of the protocol
+        ///    even in cases where the protocol instance was in an undefined state due to
+        ///    dangling/stale/obsolete contexts
+        /// </summary>
+        private void resetContext()
+        {
+            ContextStack.Clear();
+            Context = new JSONBaseContext(this);
+        }
+        /// <summary>
         ///     Read a byte that must match b[0]; otherwise an exception is thrown.
         ///     Marked protected to avoid synthetic accessor in JSONListContext.Read
         ///     and JSONPairContext.Read
@@ -117,7 +127,7 @@ namespace Thrift.Protocol
                     }
                     else
                     {
-                        await Trans.WriteAsync(bytes.ToArray(), i, 1, cancellationToken);
+                        await Trans.WriteAsync(bytes, i, 1, cancellationToken);
                     }
                 }
                 else
@@ -267,6 +277,7 @@ namespace Thrift.Protocol
 
         public override async Task WriteMessageBeginAsync(TMessage message, CancellationToken cancellationToken)
         {
+            resetContext();
             await WriteJsonArrayStartAsync(cancellationToken);
             await WriteJsonIntegerAsync(Version, cancellationToken);
 
@@ -304,12 +315,10 @@ namespace Thrift.Protocol
             await WriteJsonObjectEndAsync(cancellationToken);
         }
 
-        public override async Task WriteFieldStopAsync(CancellationToken cancellationToken)
+        public override Task WriteFieldStopAsync(CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                await Task.FromCanceled(cancellationToken);
-            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.CompletedTask;
         }
 
         public override async Task WriteMapBeginAsync(TMap map, CancellationToken cancellationToken)
@@ -645,6 +654,8 @@ namespace Thrift.Protocol
         public override async ValueTask<TMessage> ReadMessageBeginAsync(CancellationToken cancellationToken)
         {
             var message = new TMessage();
+
+            resetContext();
             await ReadJsonArrayStartAsync(cancellationToken);
             if (await ReadJsonIntegerAsync(cancellationToken) != Version)
             {
@@ -666,7 +677,8 @@ namespace Thrift.Protocol
         public override async ValueTask<TStruct> ReadStructBeginAsync(CancellationToken cancellationToken)
         {
             await ReadJsonObjectStartAsync(cancellationToken);
-            return new TStruct();
+
+            return AnonymousStruct;
         }
 
         public override async Task ReadStructEndAsync(CancellationToken cancellationToken)
@@ -676,18 +688,19 @@ namespace Thrift.Protocol
 
         public override async ValueTask<TField> ReadFieldBeginAsync(CancellationToken cancellationToken)
         {
-            var field = new TField();
             var ch = await Reader.PeekAsync(cancellationToken);
             if (ch == TJSONProtocolConstants.RightBrace[0])
             {
-                field.Type = TType.Stop;
+                return StopField;
             }
-            else
+
+            var field = new TField()
             {
-                field.ID = (short) await ReadJsonIntegerAsync(cancellationToken);
-                await ReadJsonObjectStartAsync(cancellationToken);
-                field.Type = TJSONProtocolHelper.GetTypeIdForTypeName(await ReadJsonStringAsync(false, cancellationToken));
-            }
+                ID = (short)await ReadJsonIntegerAsync(cancellationToken)
+            };
+
+            await ReadJsonObjectStartAsync(cancellationToken);
+            field.Type = TJSONProtocolHelper.GetTypeIdForTypeName(await ReadJsonStringAsync(false, cancellationToken));
             return field;
         }
 
@@ -832,20 +845,16 @@ namespace Thrift.Protocol
                 Proto = proto;
             }
 
-            public virtual async Task WriteConditionalDelimiterAsync(CancellationToken cancellationToken)
+            public virtual Task WriteConditionalDelimiterAsync(CancellationToken cancellationToken)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    await Task.FromCanceled(cancellationToken);
-                }
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.CompletedTask;
             }
 
-            public virtual async Task ReadConditionalDelimiterAsync(CancellationToken cancellationToken)
+            public virtual Task ReadConditionalDelimiterAsync(CancellationToken cancellationToken)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    await Task.FromCanceled(cancellationToken);
-                }
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.CompletedTask;
             }
 
             public virtual bool EscapeNumbers()
@@ -965,10 +974,7 @@ namespace Thrift.Protocol
             /// </summary>
             public async ValueTask<byte> ReadAsync(CancellationToken cancellationToken)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return await Task.FromCanceled<byte>(cancellationToken);
-                }
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (_hasData)
                 {
@@ -988,10 +994,7 @@ namespace Thrift.Protocol
             /// </summary>
             public async ValueTask<byte> PeekAsync(CancellationToken cancellationToken)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return await Task.FromCanceled<byte>(cancellationToken);
-                }
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (!_hasData)
                 {

@@ -47,8 +47,8 @@ gopath: $(THRIFT) $(THRIFTTEST) \
 				ConflictNamespaceTestSuperThing.thrift \
 				ConflictNamespaceServiceTest.thrift \
 				DuplicateImportsTest.thrift \
-				ProcessorInterceptorTest.thrift \
-				StructEnumMarshallingTest.thrift
+				EqualsTest.thrift \
+				ConflictArgNamesTest.thrift
 	mkdir -p gopath/src
 	grep -v list.*map.*list.*map $(THRIFTTEST) | grep -v 'set<Insanity>' > ThriftTest.thrift
 	$(THRIFT) $(THRIFTARGS) -r IncludesTest.thrift
@@ -75,8 +75,8 @@ gopath: $(THRIFT) $(THRIFTTEST) \
 	$(THRIFT) $(THRIFTARGS) ConflictNamespaceTestSuperThing.thrift
 	$(THRIFT) $(THRIFTARGS) ConflictNamespaceServiceTest.thrift
 	$(THRIFT) $(THRIFTARGS) -r DuplicateImportsTest.thrift
-	$(THRIFT) $(THRIFTARGS) ProcessorInterceptorTest.thrift
-	$(THRIFT) $(THRIFTARGS) StructEnumMarshallingTest.thrift
+	$(THRIFT) $(THRIFTARGS) EqualsTest.thrift
+	$(THRIFT) $(THRIFTARGS) ConflictArgNamesTest.thrift
 	GOPATH=`pwd`/gopath $(GO) get github.com/golang/mock/gomock || true
 	sed -i 's/\"context\"/\"golang.org\/x\/net\/context\"/g' gopath/src/github.com/golang/mock/gomock/controller.go || true
 	GOPATH=`pwd`/gopath $(GO) get github.com/golang/mock/gomock
@@ -102,8 +102,8 @@ check: gopath
 				conflict/context/conflict_service-remote \
 				servicestest/container_test-remote \
 				duplicateimportstest \
-				processorinterceptortest \
-				structenummarshallingtest
+				equalstest \
+				conflictargnamestest
 	GOPATH=`pwd`/gopath $(GO) test thrift tests dontexportrwtest
 
 clean-local:
@@ -115,29 +115,31 @@ client: stubs
 EXTRA_DIST = \
 	dontexportrwtest \
 	tests \
+	common \
 	BinaryKeyTest.thrift \
-	GoTagTest.thrift \
-	IncludesTest.thrift \
-	MultiplexedProtocolTest.thrift \
-	NamespacedTest.thrift \
-	OnewayTest.thrift \
-	OptionalFieldsTest.thrift \
-	RequiredFieldTest.thrift \
-	RefAnnotationFieldsTest.thrift \
-	UnionDefaultValueTest.thrift \
-	UnionBinaryTest.thrift \
-	ServicesTest.thrift \
-	TypedefFieldTest.thrift \
-	ErrorTest.thrift \
-	NamesTest.thrift \
-	InitialismsTest.thrift \
-	DontExportRWTest.thrift \
-	IgnoreInitialismsTest.thrift \
+	ConflictArgNamesTest.thrift \
+	ConflictNamespaceServiceTest.thrift \
 	ConflictNamespaceTestA.thrift \
 	ConflictNamespaceTestB.thrift \
 	ConflictNamespaceTestC.thrift \
 	ConflictNamespaceTestD.thrift \
 	ConflictNamespaceTestSuperThing.thrift \
-	ConflictNamespaceServiceTest.thrift \
-	ProcessorInterceptorTest.thrift \
-	StructEnumMarshallingTest.thrift
+	DontExportRWTest.thrift \
+	DuplicateImportsTest.thrift \
+	ErrorTest.thrift \
+	EqualsTest.thrift \
+	GoTagTest.thrift \
+	IgnoreInitialismsTest.thrift \
+	IncludesTest.thrift \
+	InitialismsTest.thrift \
+	MultiplexedProtocolTest.thrift \
+	NamespacedTest.thrift \
+	NamesTest.thrift \
+	OnewayTest.thrift \
+	OptionalFieldsTest.thrift \
+	RefAnnotationFieldsTest.thrift \
+	RequiredFieldTest.thrift \
+	ServicesTest.thrift \
+	TypedefFieldTest.thrift \
+	UnionBinaryTest.thrift \
+	UnionDefaultValueTest.thrift

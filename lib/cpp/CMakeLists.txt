@@ -57,6 +57,9 @@ set( thriftcpp_SOURCES
    src/thrift/transport/TServerSocket.cpp
    src/thrift/transport/TTransportUtils.cpp
    src/thrift/transport/TBufferTransports.cpp
+   src/thrift/transport/TWebSocketServer.h
+   src/thrift/transport/TWebSocketServer.cpp
+   src/thrift/transport/SocketCommon.cpp
    src/thrift/server/TConnectedClient.cpp
    src/thrift/server/TServerFramework.cpp
    src/thrift/server/TSimpleServer.cpp
@@ -125,10 +128,16 @@ set( thriftcpp_threads_SOURCES
 set( thriftcppnb_SOURCES
     src/thrift/server/TNonblockingServer.cpp
     src/thrift/transport/TNonblockingServerSocket.cpp
-    src/thrift/transport/TNonblockingSSLServerSocket.cpp
     src/thrift/async/TEvhttpServer.cpp
     src/thrift/async/TEvhttpClientChannel.cpp
 )
+
+# If OpenSSL is not found or disabled just ignore the OpenSSL stuff
+if(OPENSSL_FOUND AND WITH_OPENSSL)
+    list( APPEND thriftcppnb_SOURCES
+    src/thrift/transport/TNonblockingSSLServerSocket.cpp
+    )
+endif()
 
 # Thrift zlib transport
 set( thriftcppz_SOURCES
@@ -144,19 +153,24 @@ include(ThriftMacros)
 
 ADD_LIBRARY_THRIFT(thrift ${thriftcpp_SOURCES} ${thriftcpp_threads_SOURCES})
 if(WIN32)
-    TARGET_LINK_LIBRARIES_THRIFT(thrift ${SYSLIBS} ws2_32)
+    TARGET_LINK_LIBRARIES_THRIFT(thrift PUBLIC ${SYSLIBS} ws2_32)
 else()
-    TARGET_LINK_LIBRARIES_THRIFT(thrift ${SYSLIBS})
+    TARGET_LINK_LIBRARIES_THRIFT(thrift PUBLIC ${SYSLIBS})
 endif()
 ADD_PKGCONFIG_THRIFT(thrift)
 
 if(WITH_LIBEVENT)
-    find_package(Libevent REQUIRED)  # Libevent comes with CMake support form upstream
+    find_package(Libevent REQUIRED)  # Libevent comes with CMake support from upstream
     include_directories(SYSTEM ${LIBEVENT_INCLUDE_DIRS})
 
     ADD_LIBRARY_THRIFT(thriftnb ${thriftcppnb_SOURCES})
-    LINK_AGAINST_THRIFT_LIBRARY(thriftnb thrift)
-    TARGET_LINK_LIBRARIES_THRIFT(thriftnb ${SYSLIBS} ${LIBEVENT_LIBRARIES})
+    LINK_AGAINST_THRIFT_LIBRARY(thriftnb PUBLIC thrift)
+    if(TARGET libevent::core AND TARGET libevent::extra)
+        # libevent was found via its cmake config, use modern style targets
+        TARGET_LINK_LIBRARIES_THRIFT(thriftnb PUBLIC libevent::core libevent::extra)
+    else()
+        TARGET_LINK_LIBRARIES_THRIFT(thriftnb PUBLIC ${LIBEVENT_LIBRARIES})
+    endif()
     ADD_PKGCONFIG_THRIFT(thrift-nb)
 endif()
 
@@ -165,8 +179,8 @@ if(WITH_ZLIB)
     include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
 
     ADD_LIBRARY_THRIFT(thriftz ${thriftcppz_SOURCES})
-    TARGET_LINK_LIBRARIES_THRIFT(thriftz ${SYSLIBS} ${ZLIB_LIBRARIES})
-    TARGET_LINK_LIBRARIES_THRIFT_AGAINST_THRIFT_LIBRARY(thriftz thrift)
+    LINK_AGAINST_THRIFT_LIBRARY(thriftz PUBLIC thrift)
+    TARGET_LINK_LIBRARIES_THRIFT(thriftz PUBLIC ${ZLIB_LIBRARIES})
     ADD_PKGCONFIG_THRIFT(thrift-z)
 endif()
 

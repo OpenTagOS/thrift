@@ -309,7 +309,7 @@ var
   http  : IWinHTTPRequest;
   pData : PByte;
   len   : Integer;
-  error : Cardinal;
+  error, dwSize : Cardinal;
   sMsg  : string;
 begin
   http := CreateRequest;
@@ -333,8 +333,11 @@ begin
     else raise TTransportExceptionInterrupted.Create( sMsg);
   end;
 
+  // we're about to receive a new message, so reset everyting
+  ResetConsumedMessageSize(-1);
   FInputStream := THTTPResponseStream.Create( http);
-  UpdateKnownMessageSize( http.QueryTotalResponseSize);
+  if http.QueryTotalResponseSize( dwSize)  // FALSE indicates "no info available"
+  then UpdateKnownMessageSize( dwSize);
 end;
 
 procedure TWinHTTPClientImpl.Write( const pBuf : Pointer; off, len : Integer);

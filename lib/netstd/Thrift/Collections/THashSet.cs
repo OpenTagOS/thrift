@@ -32,8 +32,13 @@ namespace Thrift.Collections
 
         public THashSet(int capacity)
         {
-            // TODO: uncomment capacity when NET Standard also implements it
-            Items = new HashSet<T>(/*capacity*/);
+            #if NET5_0
+            Items = new HashSet<T>(capacity);
+            #elif NETFRAMEWORK || NETSTANDARD
+            Items = new HashSet<T>(/*capacity not supported*/);
+            #else
+            #error Unknown platform
+            #endif
         }
 
         public int Count => Items.Count;
@@ -60,12 +65,12 @@ namespace Thrift.Collections
             Items.CopyTo(array, arrayIndex);
         }
 
-        public IEnumerator GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return Items.GetEnumerator();
         }
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        public IEnumerator<T> GetEnumerator()
         {
             return ((IEnumerable<T>) Items).GetEnumerator();
         }

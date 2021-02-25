@@ -105,8 +105,6 @@ project.lock.json
 /contrib/fb303/py/fb303/ttypes.py
 /depcomp
 /install-sh
-/lib/as3/.gradle/
-/lib/as3/build/
 /lib/cl/backport-update.zip
 /lib/cl/lib
 /lib/cl/run-tests
@@ -184,9 +182,6 @@ project.lock.json
 /lib/c_glib/test/testserialization
 /lib/c_glib/thriftc.pc
 /lib/c_glib/thrift_c_glib.pc
-/lib/csharp/**/bin/
-/lib/csharp/**/obj/
-/lib/csharp/src/packages
 /lib/d/test/*.pem
 /lib/d/libthriftd*.a
 /lib/d/test/async_test
@@ -234,8 +229,6 @@ project.lock.json
 /lib/js/dist
 /lib/js/doc
 /lib/js/test/build
-/lib/netcore/**/bin
-/lib/netcore/**/obj
 /lib/netstd/**/bin
 /lib/netstd/**/obj
 /lib/nodejs/coverage
@@ -283,6 +276,18 @@ project.lock.json
 /lib/go/src
 /lib/go/test/gopath/
 /lib/go/test/ThriftTest.thrift
+/lib/nodets/test-compiled/
+/lib/ocaml/_build/
+/lib/ocaml/_tags
+/lib/ocaml/configure
+/lib/ocaml/setup.data
+/lib/ocaml/setup.ml
+/lib/ocaml/myocamlbuild.ml
+/lib/ocaml/*/META
+/lib/ocaml/*/*.mllib
+/lib/ocaml/*/*.mldylib
+/lib/ocaml/Makefile
+/lib/ocaml/OCamlMakefile
 /lib/rs/target/
 /lib/rs/Cargo.lock
 /lib/rs/test/Cargo.lock
@@ -293,9 +298,12 @@ project.lock.json
 /lib/rs/test/src/midlayer.rs
 /lib/rs/test/src/recursive.rs
 /lib/rs/test/src/ultimate.rs
+/lib/rs/test/src/identifiers.rs
 /lib/rs/*.iml
 /lib/rs/**/*.iml
 /lib/swift/.build
+/lib/ts/test/build/
+/lib/ts/test/gen-*
 /libtool
 /ltmain.sh
 /missing
@@ -313,8 +321,6 @@ project.lock.json
 /test/cpp/StressTestNonBlocking
 /test/cpp/TestClient
 /test/cpp/TestServer
-/test/csharp/obj
-/test/csharp/bin
 /test/dart/**/.dart_tool
 /test/dart/**/.packages
 /test/dart/**/packages
@@ -343,15 +349,15 @@ project.lock.json
 /test/php/php_ext_dir/
 /test/py.twisted/_trial_temp/
 /test/rb/Gemfile.lock
-/test/netcore/**/bin
-/test/netcore/**/obj
-/test/netcore/Thrift
 /test/netstd/**/bin
 /test/netstd/**/obj
+/test/netstd/**/launchSettings.json
 /test/netstd/*.psess
 /test/netstd/*.vspx
 /test/netstd/*.vsp
 /test/netstd/*.diagsession
+/test/netstd/Client/ThriftTest
+/test/netstd/Server/ThriftTest
 /test/netstd/Thrift
 /test/php/php_ext_dir/
 /test/rs/Cargo.lock
@@ -375,10 +381,6 @@ project.lock.json
 /tutorial/cpp/TutorialServer
 /tutorial/c_glib/tutorial_client
 /tutorial/c_glib/tutorial_server
-/tutorial/csharp/CsharpServer/obj
-/tutorial/csharp/CsharpServer/bin
-/tutorial/csharp/CsharpClient/obj
-/tutorial/csharp/CsharpClient/bin
 /tutorial/d/async_client
 /tutorial/d/client
 /tutorial/d/server
@@ -403,9 +405,6 @@ project.lock.json
 /tutorial/hs/dist/
 /tutorial/java/build/
 /tutorial/js/build/
-/tutorial/netcore/**/bin
-/tutorial/netcore/**/obj
-/tutorial/netcore/Thrift
 /tutorial/netstd/**/bin
 /tutorial/netstd/**/obj
 /tutorial/netstd/Interfaces
@@ -415,5 +414,7 @@ project.lock.json
 /tutorial/rs/bin
 /tutorial/rs/target
 /tutorial/rs/Cargo.lock
+/tutorial/netstd/Interfaces/shared
+/tutorial/netstd/Interfaces/tutorial
 /ylwrap
 

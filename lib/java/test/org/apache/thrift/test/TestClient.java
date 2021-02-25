@@ -37,13 +37,14 @@ import org.apache.thrift.protocol.TJSONProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TSimpleJSONProtocol;
-import org.apache.thrift.transport.TFastFramedTransport;
-import org.apache.thrift.transport.TFramedTransport;
+import org.apache.thrift.transport.layered.TFastFramedTransport;
+import org.apache.thrift.transport.layered.TFramedTransport;
 import org.apache.thrift.transport.THttpClient;
 import org.apache.thrift.transport.TSSLTransportFactory;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
+import org.apache.thrift.transport.TZlibTransport;
 
 // Generated code
 import thrift.test.Insanity;
@@ -77,6 +78,7 @@ public class TestClient {
     String protocol_type = "binary";
     String transport_type = "buffered";
     boolean ssl = false;
+    boolean zlib = false;
     boolean http_client = false;
 
     int socketTimeout = 1000;
@@ -101,16 +103,19 @@ public class TestClient {
           transport_type.trim();
         } else if (args[i].equals("--ssl")) {
           ssl = true;
+        } else if (args[i].equals("--zlib")) {
+          zlib = true;
         } else if (args[i].equals("--client")) {
-          http_client = true;  
+          http_client = true;
         } else if (args[i].equals("--help")) {
           System.out.println("Allowed options:");
           System.out.println("  --help\t\t\tProduce help message");
           System.out.println("  --host=arg (=" + host + ")\tHost to connect");
           System.out.println("  --port=arg (=" + port + ")\tPort number to connect");
-          System.out.println("  --transport=arg (=" + transport_type + ")\n\t\t\t\tTransport: buffered, framed, fastframed, http");
+          System.out.println("  --transport=arg (=" + transport_type + ")\n\t\t\t\tTransport: buffered, framed, fastframed, http, zlib");
           System.out.println("  --protocol=arg (=" + protocol_type + ")\tProtocol: binary, compact, json, multi, multic, multij");
           System.out.println("  --ssl\t\t\tEncrypted Transport using SSL");
+          System.out.println("  --zlib\t\t\tCompressed Transport using Zlib");
           System.out.println("  --testloops[--n]=arg (=" + numTests + ")\tNumber of Tests");
           System.exit(0);
         }
@@ -134,6 +139,7 @@ public class TestClient {
       } else if (transport_type.equals("framed")) {
       } else if (transport_type.equals("fastframed")) {
       } else if (transport_type.equals("http")) {
+      } else if (transport_type.equals("zlib")) {
       } else {
         throw new Exception("Unknown transport type! " + transport_type);
       }
@@ -151,7 +157,7 @@ public class TestClient {
       if (transport_type.equals("http")) {
         String url = "http://" + host + ":" + port + "/test/service";
         if (http_client == true) {
-          
+
           transport = new THttpClient(url, HttpClients.createDefault());
         } else {
           transport = new THttpClient(url);
@@ -165,11 +171,18 @@ public class TestClient {
         }
         socket.setTimeout(socketTimeout);
         transport = socket;
-        if (transport_type.equals("buffered")) {
-        } else if (transport_type.equals("framed")) {
-          transport = new TFramedTransport(transport);
-        } else if (transport_type.equals("fastframed")) {
-          transport = new TFastFramedTransport(transport);
+        if (transport_type.equals("zlib")) {
+          transport = new TZlibTransport(transport);
+        } else {
+          if (transport_type.equals("buffered")) {
+          } else if (transport_type.equals("framed")) {
+            transport = new TFramedTransport(transport);
+          } else if (transport_type.equals("fastframed")) {
+            transport = new TFastFramedTransport(transport);
+          }
+          if (zlib) {
+            transport = new TZlibTransport(transport);
+          }
         }
       }
     } catch (Exception x) {
@@ -762,7 +775,7 @@ public class TestClient {
         long onewayElapsedMillis = (System.nanoTime() - startOneway) / 1000000;
         if (onewayElapsedMillis > 200) {
           System.out.println("Oneway test took too long to execute failed: took " +
-                             Long.toString(onewayElapsedMillis) +
+                  onewayElapsedMillis +
                              "ms");
           System.out.println("oneway calls are 'fire and forget' and therefore should not cause blocking.");
           System.out.println("Some transports (HTTP) have a required response, and typically this failure");
@@ -773,7 +786,7 @@ public class TestClient {
           returnCode |= ERR_BASETYPES;
         } else {
           System.out.println("Success - fire and forget only took " +
-                             Long.toString(onewayElapsedMillis) +
+                  onewayElapsedMillis +
                              "ms");
         }
 

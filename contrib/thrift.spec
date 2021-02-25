@@ -28,7 +28,7 @@ Name:           thrift
 License:        Apache License v2.0
 Group:          Development
 Summary:        RPC and serialization framework
-Version:        0.14.0
+Version:        0.15.0
 Release:        0
 URL:            http://thrift.apache.org
 Packager:       Thrift Developers <dev@thrift.apache.org>
@@ -175,7 +175,6 @@ export RUBYLIB=${PWD}/lib/rb/lib
   %{?without_ruby:     --without-ruby     } \
   %{?without_php:      --without-php      } \
   %{!?without_php:     PHP_PREFIX=${RPM_BUILD_ROOT}/usr/lib/php } \
-  --without-csharp \
   --without-erlang \
 
 %if 0%{!?without_ruby:1}

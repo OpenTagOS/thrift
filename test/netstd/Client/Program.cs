@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ThriftTest;
 
 namespace Client
@@ -25,23 +26,26 @@ namespace Client
     {
         public static int Main(string[] args)
         {
-            try
-            {
-                Console.SetBufferSize(Console.BufferWidth, 4096);
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("Failed to grow scroll-back buffer");
+            if (OperatingSystem.IsWindows())
+            { 
+                try
+                {
+                    Console.SetBufferSize(Console.BufferWidth, 4096);
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Failed to grow scroll-back buffer");
+                }
             }
 
             // run whatever mode is choosen, default to test impl
-            var firstArg = args.Length > 0 ? args[0] : string.Empty;
-            switch (firstArg)
+            var argslist = new List<string>(args);
+            switch (argslist.FirstOrDefault())
             {
-                case "client":
-                    Console.WriteLine("The 'client' argument is no longer required.");
-                    PrintHelp();
-                    return -1;
+                case "client":  // crosstest wants to pass this, so just emit a hint and ignore
+                    Console.WriteLine("Hint: The 'client' argument is no longer required.");
+                    argslist.RemoveAt(0);
+                    return TestClient.Execute(argslist);
                 case "--performance":
                 case "--performance-test":
                     return Tests.PerformanceTests.Execute();
@@ -49,7 +53,7 @@ namespace Client
                     PrintHelp();
                     return 0;
                 default:
-                    return TestClient.Execute(new List<string>(args));
+                    return TestClient.Execute(argslist);
             }
         }
 

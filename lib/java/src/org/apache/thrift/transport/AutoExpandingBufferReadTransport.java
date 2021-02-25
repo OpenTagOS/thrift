@@ -18,17 +18,20 @@
  */
 package org.apache.thrift.transport;
 
+import org.apache.thrift.TConfiguration;
+
 /**
  * TTransport for reading from an AutoExpandingBuffer.
  */
-public class AutoExpandingBufferReadTransport extends TTransport {
+public class AutoExpandingBufferReadTransport extends TEndpointTransport {
 
   private final AutoExpandingBuffer buf;
 
   private int pos = 0;
   private int limit = 0;
 
-  public AutoExpandingBufferReadTransport(int initialCapacity) {
+  public AutoExpandingBufferReadTransport(TConfiguration config, int initialCapacity) throws TTransportException {
+    super(config);
     this.buf = new AutoExpandingBuffer(initialCapacity);
   }
 
@@ -51,8 +54,10 @@ public class AutoExpandingBufferReadTransport extends TTransport {
   @Override
   public final int read(byte[] target, int off, int len) throws TTransportException {
     int amtToRead = Math.min(len, getBytesRemainingInBuffer());
-    System.arraycopy(buf.array(), pos, target, off, amtToRead);
-    consumeBuffer(amtToRead);
+    if(amtToRead > 0){
+      System.arraycopy(buf.array(), pos, target, off, amtToRead);
+      consumeBuffer(amtToRead);
+    }
     return amtToRead;
   }
 
@@ -81,4 +86,3 @@ public class AutoExpandingBufferReadTransport extends TTransport {
     return limit - pos;
   }
 }
-  

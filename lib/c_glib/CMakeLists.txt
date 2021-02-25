@@ -31,6 +31,7 @@ set(thrift_c_glib_SOURCES
     src/thrift/c_glib/thrift.c
     src/thrift/c_glib/thrift_struct.c
     src/thrift/c_glib/thrift_application_exception.c
+    src/thrift/c_glib/thrift_configuration.c
     src/thrift/c_glib/processor/thrift_processor.c
     src/thrift/c_glib/processor/thrift_dispatch_processor.c
     src/thrift/c_glib/processor/thrift_multiplexed_processor.c
@@ -59,9 +60,8 @@ set(thrift_c_glib_SOURCES
 )
 
 # If OpenSSL is not found just ignore the OpenSSL stuff
-find_package(OpenSSL)
-if(OPENSSL_FOUND AND WITH_OPENSSL)
-    list( APPEND thrift_c_glib_SOURCES
+if(WITH_OPENSSL)
+    list(APPEND thrift_c_glib_SOURCES
 	    src/thrift/c_glib/transport/thrift_ssl_socket.c
     )
     include_directories(SYSTEM "${OPENSSL_INCLUDE_DIR}")
@@ -73,7 +73,7 @@ endif()
 include(ThriftMacros)
 
 ADD_LIBRARY_THRIFT(thrift_c_glib ${thrift_c_glib_SOURCES})
-TARGET_LINK_LIBRARIES_THRIFT(thrift_c_glib ${SYSLIBS})
+TARGET_LINK_LIBRARIES_THRIFT(thrift_c_glib PUBLIC ${SYSLIBS})
 
 # Install the headers
 install(DIRECTORY "src/thrift" DESTINATION "${INCLUDE_INSTALL_DIR}"

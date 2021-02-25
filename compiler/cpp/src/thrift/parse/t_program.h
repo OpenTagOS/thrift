@@ -112,7 +112,10 @@ public:
     objects_.push_back(tx);
     xceptions_.push_back(tx);
   }
-  void add_service(t_service* ts) { services_.push_back(ts); }
+  void add_service(t_service* ts) {
+    ts->validate_unique_members();
+    services_.push_back(ts);
+  }
 
   // Programs to include
   std::vector<t_program*>& get_includes() { return includes_; }
@@ -290,14 +293,6 @@ public:
       if (base_language == "smalltalk") {
         pwarning(1, "Namespace 'smalltalk' is deprecated. Use 'st' instead");
         base_language = "st";
-      }
-      else if (base_language == "csharp") {
-        pwarning(1, "The '%s' target is deprecated. Consider moving to 'netstd' instead.", base_language.c_str());
-        // warn only, don't change base_language
-      }
-      else if (base_language == "netcore") {
-        pwarning(1, "The '%s' target is no longer available. Use 'netstd' instead.", base_language.c_str());
-        // warn only, don't change base_language
       }
 
       t_generator_registry::gen_map_t my_copy = t_generator_registry::get_generator_map();

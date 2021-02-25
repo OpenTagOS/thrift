@@ -1,6 +1,6 @@
 ## Thrift interface description language
 
-For Thrift version 0.14.0.
+For Thrift version 0.15.0.
 
 The Thrift interface definition language (IDL) allows for the definition of [Thrift Types](/docs/types). A Thrift IDL file is processed by the Thrift code generator to produce code for the various target languages to support the defined structs and services in the IDL file.
 
@@ -38,7 +38,7 @@ A namespace declares which namespaces/package/module/etc. the type definitions i
 
     [5]  Namespace       ::=  ( 'namespace' ( NamespaceScope Identifier ) )
 
-    [6]  NamespaceScope  ::=  '*' | 'c_glib' | 'cpp' | 'csharp' | 'delphi' | 'go' | 'java' | 'js' | 'lua' | 'netcore' | 'perl' | 'php' | 'py' | 'py.twisted' | 'rb' | 'st' | 'xsd'
+    [6]  NamespaceScope  ::=  '*' | 'c_glib' | 'cpp' | 'delphi' | 'haxe' | 'go' | 'java' | 'js' | 'lua' | 'netstd' | 'perl' | 'php' | 'py' | 'py.twisted' | 'rb' | 'st' | 'xsd'
 
 ## Definition
 
@@ -104,7 +104,7 @@ A service provides the interface for a set of functionality provided by a Thrift
 
 ### Field Requiredness
 
-There are two explicit requiredness values, and a third one that is applied implicity if neither  *required* nor *optional* are given: *default* requiredness.
+There are two explicit requiredness values, and a third one that is applied implicitly if neither  *required* nor *optional* are given: *default* requiredness.
 
     [18] FieldReq        ::=  'required' | 'optional' 
 
@@ -144,7 +144,7 @@ The major point to keep in mind here is the fact, that any unwritten default val
 
 ### XSD Options
 
-N.B.: These have  some internal purpose at Facebook but serve no current purpose in Thrift. Use of these options is strongly discouraged.
+N.B.: These have some internal purpose at Facebook but serve no current purpose in Thrift. The use of these options is strongly discouraged.
 
     [19] XsdFieldOptions ::=  'xsd_optional'? 'xsd_nillable'? XsdAttrs?
 
@@ -224,8 +224,8 @@ Here are some examples of Thrift definitions, using the Thrift IDL:
  [tutorial]:           /tutorial/
  [fb303.thrift]:       https://raw.githubusercontent.com/apache/thrift/master/contrib/fb303/if/fb303.thrift
  [Apache Cassandra's]: http://cassandra.apache.org/
- [cassandra.thrift]:   http://svn.apache.org/viewvc/cassandra/trunk/interface/cassandra.thrift?view=co
- [Evernote API]:       http://www.evernote.com/about/developer/api/
+ [cassandra.thrift]:   https://gitbox.apache.org/repos/asf?p=cassandra.git;a=blob_plain;f=interface/cassandra.thrift;hb=refs/heads/cassandra-3.0
+ [Evernote API]:       https://github.com/evernote/evernote-thrift
 
 ## To Do/Questions
 
@@ -236,7 +236,7 @@ Initialization of Base Types for all Languages?
 Why does position of `CppType` vary between `SetType` and `ListType`?
 
  * std::set does sort the elements automatically, that's the design. see [Thrift Types](/docs/types) or the [C++ std:set reference][] for further details
- * The question is, how other languages are doing that? What about custom objects, do they have a Compare function the set the order correctly?
+ * The question is, how other languages are doing that? What about custom objects, do they have a Compare function to set the order correctly?
 
  [C++ std:set reference]: http://www.cplusplus.com/reference/stl/set/
 

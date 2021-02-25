@@ -20,7 +20,7 @@
 AC_PREREQ(2.65)
 AC_CONFIG_MACRO_DIR([./aclocal])
 
-AC_INIT([thrift], [0.14.0])
+AC_INIT([thrift], [0.15.0])
 
 AC_CONFIG_AUX_DIR([.])
 
@@ -116,12 +116,10 @@ AC_ARG_ENABLE([libs],
 have_libs=yes
 if test "$enable_libs" = "no"; then
   have_libs="no"
-  with_as3="no"
   with_cpp="no"
   with_c_glib="no"
   with_cl="no"
   with_java="no"
-  with_csharp="no"
   with_python="no"
   with_py3="no"
   with_ruby="no"
@@ -141,18 +139,6 @@ if test "$enable_libs" = "no"; then
   with_rs="no"
   with_swift="no"
 fi
-
-AX_THRIFT_LIB(as3, [as3], yes)
-have_as3=no
-if test "$with_as3" = "yes"; then
-  if test "${FLEX_HOME+set}" = set; then 
-    AC_PATH_PROGS([FLEX_COMPC], [compc], "fail", [$PATH$PATH_SEPARATOR$FLEX_HOME/bin])
-    if test "$FLEX_COMPC" != "fail"; then
-      have_as3="yes"
-    fi
-  fi
-fi
-AM_CONDITIONAL(WITH_AS3, [test "$have_as3" = "yes"])
 
 AX_THRIFT_LIB(cpp, [C++], yes)
 have_cpp=no
@@ -212,24 +198,6 @@ if test "$have_cpp" = "yes" -o "$have_c_glib" = "yes";  then
   AX_CHECK_OPENSSL()
 fi
 
-AX_THRIFT_LIB(csharp, [C#], yes)
-if test "$with_csharp" = "yes";  then
-  PKG_CHECK_MODULES(MONO, mono >= 2.11.0, mono_2_11=yes, mono_2_11=no)
-  if test "$mono_2_11" == "yes"; then
-    AC_PATH_PROG([MCS], [mcs])
-    if test "x$MCS" != "x"; then
-      mono_mcs="yes"
-    fi
-  fi
-  PKG_CHECK_MODULES(MONO, mono >= 2.0.0, net_3_5=yes, net_3_5=no)
-  PKG_CHECK_MODULES(MONO, mono >= 1.2.4, have_mono=yes, have_mono=no)
-  if test "$have_mono" = "yes" ; then
-    have_csharp="yes"
-  fi
-fi
-AM_CONDITIONAL(WITH_MONO, [test "$have_csharp" = "yes"])
-AM_CONDITIONAL(NET_2_0, [test "$net_3_5" = "no"])
-AM_CONDITIONAL(MONO_MCS, [test "$mono_mcs" = "yes"])
 
 AX_THRIFT_LIB(java, [Java], yes)
 if test "$with_java" = "yes";  then
@@ -325,11 +293,15 @@ AM_CONDITIONAL(WITH_TWISTED_TEST, [test "$have_trial" = "yes"])
 have_py3="no"
 AX_THRIFT_LIB(py3, [Py3], yes)
 if test "$with_py3" = "yes"; then
+  # if $PYTHON is 2.x then search for python 3. otherwise, $PYTHON is already 3.x
   if $PYTHON --version 2>&1 | grep -q "Python 2"; then
-    AC_PATH_PROGS([PYTHON3], [python3 python3.7 python37 python3.6 python36 python3.5 python35 python3.4 python34])
+    AC_PATH_PROGS([PYTHON3], [python3 python3.8 python38 python3.7 python37 python3.6 python36 python3.5 python35 python3.4 python34])
     if test -n "$PYTHON3"; then
       have_py3="yes"
     fi
+  elif $PYTHON --version 2>&1 | grep -q "Python 3"; then
+    have_py3="yes"
+    PYTHON3=$PYTHON
   fi
 fi
 AM_CONDITIONAL(WITH_PY3, [test "$have_py3" = "yes"])
@@ -791,7 +763,6 @@ AC_CONFIG_FILES([
   compiler/cpp/src/Makefile
   compiler/cpp/test/Makefile
   lib/Makefile
-  lib/as3/Makefile
   lib/cl/Makefile
   lib/cpp/Makefile
   lib/cpp/test/Makefile
@@ -802,8 +773,6 @@ AC_CONFIG_FILES([
   lib/c_glib/Makefile
   lib/c_glib/thrift_c_glib.pc
   lib/c_glib/test/Makefile
-  lib/csharp/Makefile
-  lib/csharp/test/Multiplex/Makefile
   lib/d/Makefile
   lib/d/test/Makefile
   lib/erl/Makefile
@@ -838,7 +807,6 @@ AC_CONFIG_FILES([
   test/c_glib/Makefile
   test/cl/Makefile
   test/cpp/Makefile
-  test/csharp/Makefile
   test/erl/Makefile
   test/go/Makefile
   test/haxe/Makefile
@@ -875,8 +843,6 @@ AC_CONFIG_FILES([
   tutorial/rs/Makefile
 ])
 
-if test "$have_as3" = "yes" ; then MAYBE_AS3="as3" ; else MAYBE_AS3="" ; fi
-AC_SUBST([MAYBE_AS3])
 if test "$have_cpp" = "yes" ; then MAYBE_CPP="cpp" ; else MAYBE_CPP="" ; fi
 AC_SUBST([MAYBE_CPP])
 if test "$have_c_glib" = "yes" ; then MAYBE_C_GLIB="c_glib" ; else MAYBE_C_GLIB="" ; fi
@@ -885,8 +851,6 @@ if test "$have_d" = "yes" -a "$have_deimos_event2" = "yes" -a "$have_deimos_open
 AC_SUBST([MAYBE_D])
 if test "$have_java" = "yes" ; then MAYBE_JAVA="java" ; else MAYBE_JAVA="" ; fi
 AC_SUBST([MAYBE_JAVA])
-if test "$have_csharp" = "yes" ; then MAYBE_CSHARP="csharp" ; else MAYBE_CSHARP="" ; fi
-AC_SUBST([MAYBE_CSHARP])
 if test "$have_python" = "yes" ; then MAYBE_PYTHON="py" ; else MAYBE_PYTHON="" ; fi
 AC_SUBST([MAYBE_PYTHON])
 if test "$have_py3" = "yes" ; then MAYBE_PY3="py3" ; else MAYBE_PY3="" ; fi
@@ -926,9 +890,7 @@ AC_OUTPUT
 echo
 echo "$PACKAGE $VERSION"
 echo
-echo "Building ActionScript3 Library : $have_as3"
 echo "Building C (GLib) Library .... : $have_c_glib"
-echo "Building C# (Mono) Library ... : $have_csharp"
 echo "Building C++ Library ......... : $have_cpp"
 echo "Building Common Lisp Library.. : $have_cl"
 echo "Building D Library ........... : $have_d"
@@ -949,22 +911,10 @@ echo "Building Ruby Library ........ : $have_ruby"
 echo "Building Rust Library ........ : $have_rs"
 echo "Building Swift Library ....... : $have_swift"
 
-if test "$have_as3" = "yes" ; then
-  echo
-  echo "ActionScript Library:"
-  echo "   FLEX_HOME ................. : $FLEX_HOME"
-  echo "   Using compc version ....... : $($FLEX_COMPC --version)"
-fi
 if test "$have_c_glib" = "yes" ; then
   echo
   echo "C (glib):"
   echo "   Using glib version ........ : $($GSETTINGS --version)"
-fi
-if test "$have_csharp" = "yes" ; then
-  echo
-  echo "C# Library:"
-  echo "   Using .NET 3.5 ............ : $net_3_5"
-  echo "   Using mono version ........ : $($MCS --version | head -1)"
 fi
 if test "$have_cpp" = "yes" ; then
   echo

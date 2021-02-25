@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.apache.thrift.transport.TNonblockingTransport;
+import org.apache.thrift.transport.TTransportException;
 
 /**
  * Write frame (header and payload) to transport in a nonblocking way.
@@ -94,14 +95,14 @@ public abstract class FrameWriter {
   public abstract void withOnlyPayload(byte[] payload, int offset, int length);
 
   protected abstract ByteBuffer buildFrame(byte[] header, int headerOffset, int headerLength,
-                                           byte[] payload, int payloadOffset, int payloadeLength);
+                                           byte[] payload, int payloadOffset, int payloadLength);
 
   /**
    * Nonblocking write to the underlying transport.
    *
-   * @throws IOException
+   * @throws TTransportException
    */
-  public void write(TNonblockingTransport transport) throws IOException {
+  public void write(TNonblockingTransport transport) throws TTransportException {
     transport.write(frameBytes);
   }
 

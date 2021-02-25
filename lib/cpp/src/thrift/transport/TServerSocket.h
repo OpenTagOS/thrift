@@ -38,22 +38,6 @@ namespace transport {
 
 class TSocket;
 
-class TGetAddrInfoWrapper {
-public:
-  TGetAddrInfoWrapper(const char* node, const char* service, const struct addrinfo* hints);
-
-  virtual ~TGetAddrInfoWrapper();
-
-  int init();
-  const struct addrinfo* res();
-
-private:
-  const char* node_;
-  const char* service_;
-  const struct addrinfo* hints_;
-  struct addrinfo* res_;
-};
-
 /**
  * Server socket implementation of TServerTransport. Wrapper around a unix
  * socket listen and accept calls.
@@ -97,6 +81,9 @@ public:
   TServerSocket(const std::string& path);
 
   ~TServerSocket() override;
+
+
+  bool isOpen() const override;
 
   void setSendTimeout(int sendTimeout);
   void setRecvTimeout(int recvTimeout);
@@ -153,6 +140,9 @@ protected:
 
 private:
   void notify(THRIFT_SOCKET notifySock);
+  void _setup_sockopts();
+  void _setup_unixdomain_sockopts();
+  void _setup_tcp_sockopts();
 
   int port_;
   std::string address_;

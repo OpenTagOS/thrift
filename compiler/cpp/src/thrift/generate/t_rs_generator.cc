@@ -547,16 +547,13 @@ void t_rs_generator::render_attributes_and_includes() {
   f_gen_ << "#![allow(unused_extern_crates)]" << endl;
   // constructors take *all* struct parameters, which can trigger the "too many arguments" warning
   // some auto-gen'd types can be deeply nested. clippy recommends factoring them out which is hard to autogen
-  f_gen_ << "#![cfg_attr(feature = \"cargo-clippy\", allow(too_many_arguments, type_complexity))]" << endl;
+  f_gen_ << "#![allow(clippy::too_many_arguments, clippy::type_complexity)]" << endl;
   // prevent rustfmt from running against this file
   // lines are too long, code is (thankfully!) not visual-indented, etc.
   f_gen_ << "#![cfg_attr(rustfmt, rustfmt_skip)]" << endl;
   f_gen_ << endl;
 
   // add standard includes
-  f_gen_ << "extern crate thrift;" << endl;
-  f_gen_ << endl;
-  f_gen_ << "use thrift::OrderedFloat;" << endl;
   f_gen_ << "use std::cell::RefCell;" << endl;
   f_gen_ << "use std::collections::{BTreeMap, BTreeSet};" << endl;
   f_gen_ << "use std::convert::{From, TryFrom};" << endl;
@@ -566,6 +563,7 @@ void t_rs_generator::render_attributes_and_includes() {
   f_gen_ << "use std::fmt::{Display, Formatter};" << endl;
   f_gen_ << "use std::rc::Rc;" << endl;
   f_gen_ << endl;
+  f_gen_ << "use thrift::OrderedFloat;" << endl;
   f_gen_ << "use thrift::{ApplicationError, ApplicationErrorKind, ProtocolError, ProtocolErrorKind, TThriftClient};" << endl;
   f_gen_ << "use thrift::protocol::{TFieldIdentifier, TListIdentifier, TMapIdentifier, TMessageIdentifier, TMessageType, TInputProtocol, TOutputProtocol, TSetIdentifier, TStructIdentifier, TType};" << endl;
   f_gen_ << "use thrift::protocol::field_id;" << endl;
@@ -600,7 +598,7 @@ void t_rs_generator::render_attributes_and_includes() {
   if (!referenced_modules.empty()) {
     set<string>::iterator module_iter;
     for (module_iter = referenced_modules.begin(); module_iter != referenced_modules.end(); ++module_iter) {
-      f_gen_ << "use " << rust_snake_case(*module_iter) << ";" << endl;
+      f_gen_ << "use crate::" << rust_snake_case(*module_iter) << ";" << endl;
     }
     f_gen_ << endl;
   }
@@ -708,7 +706,7 @@ void t_rs_generator::render_const_value(t_type* ttype, t_const_value* tvalue, bo
       f_gen_ << tvalue->get_integer();
       break;
     case t_base_type::TYPE_DOUBLE:
-      f_gen_ << "OrderedFloat::from(" << tvalue->get_double() << " as f64)";
+      f_gen_ << "OrderedFloat::from(" << tvalue->get_double() << "_f64)";
       break;
     default:
       throw "cannot generate const value for " + t_base_type::t_base_name(tbase_type->get_base());
@@ -903,12 +901,16 @@ void t_rs_generator::render_enum_impl(const string& enum_name) {
   f_gen_ << "impl " << enum_name << " {" << endl;
   indent_up();
 
+  // taking enum as 'self' here because Thrift enums
+  // are represented as Rust enums with integer values
+  // it's cheaper to copy the integer as opposed to
+  // taking a reference to the enum
   f_gen_
     << indent()
-    << "pub fn write_to_out_protocol(&self, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {"
+    << "pub fn write_to_out_protocol(self, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {"
     << endl;
   indent_up();
-  f_gen_ << indent() << "o_prot.write_i32(*self as i32)" << endl;
+  f_gen_ << indent() << "o_prot.write_i32(self as i32)" << endl;
   indent_down();
   f_gen_ << indent() << "}" << endl;
 
@@ -1232,7 +1234,7 @@ void t_rs_generator::render_struct_constructor(
     << endl;
   indent_up();
 
-  if (members.size() == 0) {
+  if (members.empty()) {
     f_gen_ << indent() << struct_name << " {}" << endl;
   } else {
     f_gen_ << indent() << struct_name << " {" << endl;
@@ -1246,7 +1248,7 @@ void t_rs_generator::render_struct_constructor(
       if (is_optional(member_req)) {
         f_gen_ << indent() << member_name << ": " << member_name << ".into()," << endl;
       } else {
-        f_gen_ << indent() << member_name << ": " << member_name << "," << endl;
+        f_gen_ << indent() << member_name << "," << endl;
       }
     }
 
@@ -1456,6 +1458,10 @@ void t_rs_generator::render_union_sync_write(const string &union_name, t_struct 
       t_field* member = (*members_iter);
       t_field::e_req member_req = t_field::T_REQUIRED;
       t_type* ttype = member->get_type();
+      if (ttype->is_typedef()) {
+        // get the actual type of typedef
+        ttype = ((t_typedef*)ttype)->get_type();
+      }
       string match_var((ttype->is_base_type() && !ttype->is_string()) ? "f" : "ref f");
       f_gen_
         << indent()
@@ -1502,19 +1508,14 @@ void t_rs_generator::render_struct_field_sync_write(
     indent_up();
     f_gen_ << indent() << "o_prot.write_field_begin(&" << field_ident_string << ")?;" << endl;
     render_type_sync_write("fld_var", true, field_type);
-    f_gen_ << indent() << "o_prot.write_field_end()?;" << endl;
-    f_gen_ << indent() << "()" << endl; // FIXME: remove this extraneous '()'
+    f_gen_ << indent() << "o_prot.write_field_end()?" << endl;
     indent_down();
-    f_gen_ << indent() << "} else {" << endl; // FIXME: remove else branch
-    indent_up();
     /* FIXME: rethink how I deal with OPT_IN_REQ_OUT
     if (req == t_field::T_OPT_IN_REQ_OUT) {
       f_gen_ << indent() << "let field_ident = " << field_ident_string << ";" << endl;
       f_gen_ << indent() << "o_prot.write_field_begin(&field_ident)?;" << endl;
       f_gen_ << indent() << "o_prot.write_field_end()?;" << endl;
     }*/
-    f_gen_ << indent() << "()" << endl;
-    indent_down();
     f_gen_ << indent() << "}" << endl;
   } else {
     f_gen_ << indent() << "o_prot.write_field_begin(&" << field_ident_string << ")?;" << endl;
@@ -2306,7 +2307,7 @@ void t_rs_generator::render_sync_send(t_function* tfunc) {
   for (members_iter = members.begin(); members_iter != members.end(); ++members_iter) {
     t_field* member = (*members_iter);
     string member_name(rust_field_name(member));
-    struct_definition << member_name << ": " << member_name << ", ";
+    struct_definition << member_name << ", ";
   }
   string struct_fields = struct_definition.str();
   if (struct_fields.size() > 0) {
@@ -2470,7 +2471,7 @@ void t_rs_generator::render_sync_processor(t_service *tservice) {
 
 void t_rs_generator::render_sync_handler_trait(t_service *tservice) {
   string extension = "";
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     t_service* extends = tservice->get_extends();
     extension = " : " + rust_namespace(extends) + rust_sync_handler_trait_name(extends);
   }
@@ -2751,7 +2752,7 @@ void t_rs_generator::render_sync_handler_failed(t_function *tfunc) {
   indent_up();
 
   // if there are any user-defined exceptions for this service call handle them first
-  if (tfunc->get_xceptions() != NULL && tfunc->get_xceptions()->get_sorted_members().size() > 0) {
+  if (tfunc->get_xceptions() != nullptr && tfunc->get_xceptions()->get_sorted_members().size() > 0) {
     string user_err_var("usr_err");
     f_gen_ << indent() << "thrift::Error::User(" << user_err_var << ") => {" << endl;
     indent_up();
@@ -2780,7 +2781,7 @@ void t_rs_generator::render_sync_handler_failed(t_function *tfunc) {
 }
 
 void t_rs_generator::render_sync_handler_failed_user_exception_branch(t_function *tfunc) {
-  if (tfunc->get_xceptions() == NULL || tfunc->get_xceptions()->get_sorted_members().empty()) {
+  if (tfunc->get_xceptions() == nullptr || tfunc->get_xceptions()->get_sorted_members().empty()) {
     throw "cannot render user exception branches if no user exceptions defined";
   }
 
@@ -2918,7 +2919,7 @@ string t_rs_generator::handler_successful_return_struct(t_function* tfunc) {
   }
 
   // any user-defined exceptions
-  if (tfunc->get_xceptions() != NULL) {
+  if (tfunc->get_xceptions() != nullptr) {
     t_struct* txceptions = tfunc->get_xceptions();
     const vector<t_field*> members = txceptions->get_sorted_members();
     vector<t_field*>::const_iterator members_iter;
@@ -3170,7 +3171,7 @@ t_field::e_req t_rs_generator::actual_field_req(t_field* tfield, t_rs_generator:
 }
 
 bool t_rs_generator::has_args(t_function* tfunc) {
-  return tfunc->get_arglist() != NULL && !tfunc->get_arglist()->get_sorted_members().empty();
+  return tfunc->get_arglist() != nullptr && !tfunc->get_arglist()->get_sorted_members().empty();
 }
 
 bool t_rs_generator::has_non_void_args(t_function* tfunc) {

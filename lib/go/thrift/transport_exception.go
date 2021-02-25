@@ -129,13 +129,3 @@ func isTimeoutError(err error) bool {
 	}
 	return false
 }
-
-// isTimeoutError returns true when err is a timeout error.
-//
-// Note that this also includes TTransportException wrapped timeout errors.
-func isTimeoutError(err error) bool {
-	if t, ok := err.(timeoutable); ok {
-		return t.Timeout()
-	}
-	return false
-}

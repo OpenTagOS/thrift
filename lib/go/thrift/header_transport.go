@@ -309,34 +309,6 @@ func NewTHeaderTransportConf(trans TTransport, conf *TConfiguration) *THeaderTra
 	}
 }
 
-// NewTHeaderTransportWithProtocolID creates THeaderTransport from the
-// underlying transport, with given protocol ID set.
-//
-// If trans is already a *THeaderTransport, it will be returned as is,
-// but with protocol ID overridden by the value passed in.
-//
-// If the passed in protocol ID is an invalid/unsupported one,
-// this function returns error.
-//
-// The protocol ID overridden is only useful for client transports.
-// For servers,
-// the protocol ID will be overridden again to the one set by the client,
-// to ensure that servers always speak the same dialect as the client.
-func NewTHeaderTransportWithProtocolID(trans TTransport, protoID THeaderProtocolID) (*THeaderTransport, error) {
-	if err := protoID.Validate(); err != nil {
-		return nil, err
-	}
-	if ht, ok := trans.(*THeaderTransport); ok {
-		return ht, nil
-	}
-	return &THeaderTransport{
-		transport:    trans,
-		reader:       bufio.NewReader(trans),
-		writeHeaders: make(THeaderMap),
-		protocolID:   protoID,
-	}, nil
-}
-
 // Open calls the underlying transport's Open function.
 func (t *THeaderTransport) Open() error {
 	return t.transport.Open()

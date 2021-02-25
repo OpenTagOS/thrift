@@ -48,7 +48,9 @@ gopath: $(THRIFT) $(THRIFTTEST) \
 				ConflictNamespaceServiceTest.thrift \
 				DuplicateImportsTest.thrift \
 				EqualsTest.thrift \
-				ConflictArgNamesTest.thrift
+				ConflictArgNamesTest.thrift \
+				ProcessorInterceptorTest.thrift \
+                StructEnumMarshallingTest.thrift
 	mkdir -p gopath/src
 	grep -v list.*map.*list.*map $(THRIFTTEST) | grep -v 'set<Insanity>' > ThriftTest.thrift
 	$(THRIFT) $(THRIFTARGS) -r IncludesTest.thrift
@@ -77,6 +79,8 @@ gopath: $(THRIFT) $(THRIFTTEST) \
 	$(THRIFT) $(THRIFTARGS) -r DuplicateImportsTest.thrift
 	$(THRIFT) $(THRIFTARGS) EqualsTest.thrift
 	$(THRIFT) $(THRIFTARGS) ConflictArgNamesTest.thrift
+	$(THRIFT) $(THRIFTARGS) ProcessorInterceptorTest.thrift
+    $(THRIFT) $(THRIFTARGS) StructEnumMarshallingTest.thrift
 	GOPATH=`pwd`/gopath $(GO) get github.com/golang/mock/gomock || true
 	sed -i 's/\"context\"/\"golang.org\/x\/net\/context\"/g' gopath/src/github.com/golang/mock/gomock/controller.go || true
 	GOPATH=`pwd`/gopath $(GO) get github.com/golang/mock/gomock
@@ -103,7 +107,9 @@ check: gopath
 				servicestest/container_test-remote \
 				duplicateimportstest \
 				equalstest \
-				conflictargnamestest
+				conflictargnamestest \
+				processorinterceptortest \
+                structenummarshallingtest
 	GOPATH=`pwd`/gopath $(GO) test thrift tests dontexportrwtest
 
 clean-local:
@@ -142,4 +148,6 @@ EXTRA_DIST = \
 	ServicesTest.thrift \
 	TypedefFieldTest.thrift \
 	UnionBinaryTest.thrift \
-	UnionDefaultValueTest.thrift
+	UnionDefaultValueTest.thrift \
+	ProcessorInterceptorTest.thrift \
+    StructEnumMarshallingTest.thrift

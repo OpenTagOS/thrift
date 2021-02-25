@@ -2961,10 +2961,6 @@ void t_go_generator::generate_process_function(t_service* tservice, t_function* 
     f_types_ << indent() << "result := " << resultname << "{}" << endl;
   }
   bool need_reference = type_need_reference(tfunction->get_returntype());
-  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
-    f_types_ << indent() << "var retval " << type_to_go_type(tfunction->get_returntype()) << endl;
-  }
-
   f_types_ << indent() << "if ";
   if (!tfunction->is_oneway()) {
       if (!tfunction->get_returntype()->is_void()) {
